@@ -12,7 +12,7 @@
 
 
 3. transfer data(less important)
-  -　socket(TCP/IP) communication  
+  - socket(TCP/IP) communication  
 
 
 4. visualize tiredness/current working condition
