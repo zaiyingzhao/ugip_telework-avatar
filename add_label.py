@@ -15,7 +15,7 @@ def tiredness_sigmoid(length, start, end, beta, alpha=8): #beta 作業時間の�
     return y
 
 if __name__ == "__main__":
-    df = pd.read_csv("res.csv")
+    df = pd.read_csv("res.csv", index_col=0)
     length = len(df)
     #df["tiredness"] = tiredness_linear(length,START,END)
     df["tiredness"] = tiredness_sigmoid(length,START,END,BETA)
