@@ -1,4 +1,3 @@
-from PIL import Image, ImageTk
 import tkinter as tk
 from time import sleep
 import threading
@@ -58,13 +57,30 @@ def load_tiredness():
     f = open("tiredness.txt", "r")
     idx = f.read()
     f.close()
-    return int(idx)
+    global index
+    index = int(idx)
+    return 0
+
+
+def update_gif():
+    global gif_player
+    gif_player.stop_loop()
+    load_tiredness()
+    gif_player = TkGif(paths[index], label)
+    # print("tkgif index: ", index)
+    gif_player.play()
+
+
+# execute update_gif() every 1 sec.
+def repeat_func():
+    update_gif()
+    root.after(1000, repeat_func)
 
 
 if __name__ == "__main__":
-    # TODO: 動的にgifを変更できるようにする
     paths = ["./gif/piyopiyo.gif", "./gif/loading-hiyoko.gif"]
-    idx = load_tiredness()
+    index = 0
+    load_tiredness()
 
     root = tk.Tk()
     root.title("remote-avatar")
@@ -77,7 +93,10 @@ if __name__ == "__main__":
     label = tk.Label(main_frame)
     label.pack()
 
-    gif_player = TkGif(paths[idx], label)
+    print("tkgif index: ", index)
+    gif_player = TkGif(paths[index], label)
     gif_player.play()
+
+    repeat_func()
 
     root.mainloop()
