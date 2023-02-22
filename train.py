@@ -1,15 +1,15 @@
-import pandas as pd
 import numpy as np
 import torchvision
-from torchvision import models
 from torch.utils.data import DataLoader, Dataset
 import torch.nn as nn
+import torch.nn.functional as F
 import torch
 import os
 import re
+import matplotlib.pyplot as plt
 
 
-class SignatureDataset(Dataset):
+class TensorDataset(Dataset):
     def __init__(
         self,
         original_dataset: torchvision.datasets.DatasetFolder,  # (sig, correct_label)
@@ -24,123 +24,136 @@ class SignatureDataset(Dataset):
         m = re.match(r"tensor(.*).pt", sig_filename)
         sig_id = m.group(1)
         assert sig_id.isnumeric()
-        # get pred_label
-        # pred_label = int(self.metadata[sig_id]["pred_label"])
-        # pred_label = sig_id // 300
-        # correct_label_from_metadata = int(self.metadata[sig_id]["correct_label"])
-        correct_label = sig_id // 300
+        correct_label = int(sig_id) // 600
 
-        # format: (signature, correct_label, pred_label, validity)
+        # format: (signature, correct_label)
         return (sig, correct_label)
 
     def __len__(self):
         return len(self.original_dataset)
 
 
-batch_size = 32
-transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+batch_size = 128
+transform = torchvision.transforms.Compose([])
 original_dataset = torchvision.datasets.DatasetFolder(
     loader=torch.load, extensions=("pt"), root="./data", transform=transform
 )
-dataset = SignatureDataset(original_dataset=original_dataset)
+dataset = TensorDataset(original_dataset=original_dataset)
+
 num_data = len(dataset)
-val_size = 0.2 * num_data
+num_classes = 3
+val_size = int(0.5 * num_data)
 train_size = num_data - val_size
-# FIXME:
-print(dataset[0])
 train_dataset, valid_dataset = torch.utils.data.random_split(
-    dataset, [train_size, val_size]
+    dataset=dataset, lengths=[train_size, val_size], generator=torch.Generator()
 )
 print("Dataset split: train={}, valid={}".format(train_size, val_size))
 train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
 valid_loader = DataLoader(dataset=valid_dataset, batch_size=batch_size, shuffle=False)
 
-model = models.resnet50(pretrained=True)
-model.fc = nn.Linear(model.fc.in_features, 6)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-net = model.to(device)
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(52, 64),
+            nn.ReLU(),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 3),
+            nn.ReLU(),
+        )
+
+    def forward(self, x):
+        x = self.linear_relu_stack(x)
+        return x
+
+
+net = Net()
+checkpoint = torch.load("model_weight.pth")
+state_dict = checkpoint.state_dict()
+net.load_state_dict(state_dict)
+
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = "cpu"
+net = net.to(device)
 
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+optimizer = torch.optim.Adam(net.parameters(), lr=0.0001)
 
 train_loss_list = []
 train_acc_list = []
 val_loss_list = []
 val_acc_list = []
 
-nb_epoch = 20
+nb_epoch = 100
 
+max_val_acc = 0.8814898133277893
 for i in range(nb_epoch):
     train_loss = 0
     train_acc = 0
     val_loss = 0
     val_acc = 0
 
-    # 学習
+    # training
     net.train()
-
     for images, labels in train_loader:
-
-        # 勾配の初期化(ループの頭でやる必要あり)
         optimizer.zero_grad()
-
-        # 訓練データの準備
         images = images.to(device)
         labels = labels.to(device)
 
-        # 順伝搬計算
         outputs = net(images)
-
-        # 誤差計算
         loss = criterion(outputs, labels)
         train_loss += loss.item()
 
-        # 学習
         loss.backward()
         optimizer.step()
 
-        # 予測値算出
         predicted = outputs.max(1)[1]
-
-        # 正解件数算出
         train_acc += (predicted == labels).sum()
 
-    # 訓練データに対する損失と精度の計算
     avg_train_loss = train_loss / len(train_loader.dataset)
     avg_train_acc = train_acc / len(train_loader.dataset)
 
-    # 評価
+    # evaluation
     net.eval()
     with torch.no_grad():
-
         for images, labels in valid_loader:
-
-            # テストデータの準備
             images = images.to(device)
             labels = labels.to(device)
 
-            # 順伝搬計算
             outputs = net(images)
-
-            # 誤差計算
             loss = criterion(outputs, labels)
             val_loss += loss.item()
 
-            # 予測値算出
             predicted = outputs.max(1)[1]
-
-            # 正解件数算出
             val_acc += (predicted == labels).sum()
 
-        # 検証データに対する損失と精度の計算
         avg_val_loss = val_loss / len(valid_loader.dataset)
         avg_val_acc = val_acc / len(valid_loader.dataset)
 
     print(
         f"Epoch [{(i+1)}/{nb_epoch}], loss: {avg_train_loss:.5f} acc: {avg_train_acc:.5f} val_loss: {avg_val_loss:.5f}, val_acc: {avg_val_acc:.5f}"
     )
+    if avg_val_acc > max_val_acc:
+        max_val_acc = avg_val_acc
+        torch.save(net, "model_weight.pth")
+        print("weight saved to ./model_weight.pth")
+
     train_loss_list.append(avg_train_loss)
     train_acc_list.append(avg_train_acc)
     val_loss_list.append(avg_val_loss)
     val_acc_list.append(avg_val_acc)
+
+print(f"maximum val_acc: {max_val_acc}")
+
+# # acc transition
+# plt.figure(figsize=(8, 6))
+# plt.plot(val_acc_list, label="val", lw=2, c="b")
+# plt.plot(train_acc_list, label="train", lw=2, c="k")
+# plt.title("acc transition")
+# plt.xticks(size=14)
+# plt.yticks(size=14)
+# plt.grid(lw=2)
+# plt.legend(fontsize=14)
+# plt.show()
