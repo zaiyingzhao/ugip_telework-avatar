@@ -87,15 +87,16 @@ if __name__ == "__main__":
         if not (X is None):
             X_value = X.values
             # 必要な情報のみ抽出
-            X_value = X_value[175:-2]
-            assert len(X_value) == len(max_values)
+            X_value_extracted = X_value[0][174:-1]
+            assert len(X_value_extracted) == len(max_values)
             # 正規化
-            for i in range(len(X_value)):
+            for i in range(len(X_value_extracted)):
                 X_value[i] /= max_values[i]
 
-            X_tensor = torch.from_numpy(X_value.astype(np.float32)).clone()
+            X_tensor = torch.from_numpy(X_value_extracted.astype(np.float32)).clone()
             outputs = net(X_tensor)
-            tiredness = outputs.max(0)[1].item()
+            label = int(outputs.max(0)[1].item())
+            tiredness = label * 0.5
             buf.append(tiredness)
             if len(buf) > 10:
                 buf.popleft()
