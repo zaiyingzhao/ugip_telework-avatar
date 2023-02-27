@@ -12,6 +12,9 @@ while True:
             break
         data_int = int.from_bytes(data_b, "big")
         print(data_int)
-        print(data_int + 1)
+        with open("tiredness.txt", "w") as f:
+            f.write(str(data_int))
+        f.close()
+
     clientsocket.close()
 s.close()
