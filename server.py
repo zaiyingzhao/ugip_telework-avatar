@@ -1,7 +1,7 @@
 import socket
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind(("", 51300))
+s.bind(("0.0.0.0", 51300))
 s.listen(1)
 while True:
     clientsocket, address = s.accept()
