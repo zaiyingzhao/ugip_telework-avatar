@@ -66,8 +66,7 @@ def update_gif():
     global gif_player
     gif_player.stop_loop()
     load_tiredness()
-    gif_player = TkGif(paths[index], label)
-    # print("tkgif index: ", index)
+    gif_player = TkGif(paths[avatar_index][index], label)
     gif_player.play()
 
 
@@ -77,8 +76,28 @@ def repeat_func():
     root.after(1000, repeat_func)
 
 
+# if button is pressed, increase avatar_index by 1
+def change_avatar():
+    n = len(paths)
+    global avatar_index
+    avatar_index = (avatar_index + 1) % n
+
+
 if __name__ == "__main__":
-    paths = ["./gif/piyopiyo.gif", "./gif/loading-hiyoko.gif"]
+    paths = [
+        [
+            "./gif/norinoriflower.gif",
+            "./gif/piyopiyo.gif",
+            "./gif/loading-hiyoko.gif",
+        ],
+        [
+            "./gif/odorupen.gif",
+            "./gif/tobipen.gif",
+            "./gif/mimimimi.gif",
+        ],
+    ]
+
+    avatar_index = 0
     index = 0
     load_tiredness()
 
@@ -90,11 +109,20 @@ if __name__ == "__main__":
     main_frame = tk.Frame(root)
     main_frame.pack()
 
+    button = tk.Button(
+        main_frame,
+        text="change avatar",
+        font=("MSゴシック", "11", "bold"),
+        width=15,
+        justify=tk.LEFT,
+        command=change_avatar,
+    )
+    button.pack()
+
     label = tk.Label(main_frame)
     label.pack()
 
-    print("tkgif index: ", index)
-    gif_player = TkGif(paths[index], label)
+    gif_player = TkGif(paths[avatar_index][index], label)
     gif_player.play()
 
     repeat_func()
