@@ -8,10 +8,9 @@ import base64
 
 import cv2
 
-API_KEY = "YOUR API KEY"
-API_SECRET = "YOUR API SECRET"
-endpoint = "https://api-us.faceplusplus.com"
-detect = "/facepp/v3/detect"
+from setup import api
+
+
 WIDTH = 640
 HEIGHT = 480
 
@@ -28,10 +27,10 @@ def flatten_dict(d, pre_lst=None, result=None):
     return result
 
 def read_img(img_bin,frame):
-  response = requests.post(endpoint+detect, 
+  response = requests.post(api.endpoint+api.detect, 
                           data={
-                          "api_key": API_KEY,
-                          "api_secret":API_SECRET,
+                          "api_key": api.API_KEY,
+                          "api_secret":api.API_SECRET,
                           "image_base64":img_bin,
                           "return_landmark": 1,
                           "return_attributes": "gender,age,smiling,glass,headpose,blur,eyestatus,emotion,facequality,beauty,mouthstatus,eyegaze,skinstatus"
@@ -91,14 +90,18 @@ def set_img(img, df):
     
     return img
 
-if __name__ == "__main__":
+def set_cap():
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("cam cannot open.")
         exit()
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
-    frame=0
+
+    return cap
+
+def collect_data(cap):
+    frame = 0
     while True :
         frame += 1
         ret, img = cap.read()
@@ -111,14 +114,47 @@ if __name__ == "__main__":
             if num_face != 0:
                 img = set_img(img, df_tmp)
 
-                if os.path.isfile("res.csv"):
-                    df_tmp.to_csv("res.csv", mode="a", header=False)
+                if os.path.isfile("./data/res.csv"):
+                    df_tmp.to_csv("./data/res.csv", mode="a", header=False)
                 else:
-                    df_tmp.to_csv("res.csv")
+                    df_tmp.to_csv("./data/res.csv")
                 print(frame)
 
             cv2.imshow('Video', img)
             if cv2.waitKey(1000) & 0xFF == ord('q'):
                 break
 
-    cap.release()
+
+# if __name__ == "__main__":
+#     cap = cv2.VideoCapture(0)
+#     if not cap.isOpened():
+#         print("cam cannot open.")
+#         exit()
+#     cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
+#     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
+#     frame=0
+#     while True :
+#         frame += 1
+#         ret, img = cap.read()
+#         if ret:
+#             #APIに渡す形式に変更
+#             result, dst_data = cv2.imencode('.jpg', img)
+#             img_bin = base64.b64encode(dst_data)
+
+#             num_face, df_tmp = read_img(img_bin,frame)
+#             if num_face != 0:
+#                 img = set_img(img, df_tmp)
+
+#                 if os.path.isfile("./data/res.csv"):
+#                     df_tmp.to_csv("./data/res.csv", mode="a", header=False)
+#                 else:
+#                     df_tmp.to_csv("./data/res.csv")
+#                 print(frame)
+
+#             cv2.imshow('Video', img)
+#             if cv2.waitKey(1000) & 0xFF == ord('q'):
+#                 break
+
+#     cap.release()
+#     add_label.add_tiredness()
+#     standardize.standardize_data()
