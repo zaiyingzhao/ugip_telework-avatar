@@ -7,13 +7,16 @@ import pickle
 import base64
 from collections import deque
 
-import collect_data
+from setup import collect_data
+from setup import standardize
+from setup import model
+from setup import api
 
 def img_to_feature(img_bin):
-    response = requests.post(collect_data.endpoint + collect_data.detect, 
+    response = requests.post(api.endpoint + api.detect, 
                             data={
-                            "api_key": collect_data.API_KEY,
-                            "api_secret": collect_data.API_SECRET,
+                            "api_key": api.API_KEY,
+                            "api_secret": api.API_SECRET,
                             "image_base64":img_bin,
                             "return_landmark": 1,
                             "return_attributes": "gender,age,smiling,glass,headpose,blur,eyestatus,emotion,facequality,beauty,mouthstatus,eyegaze,skinstatus"
@@ -35,16 +38,14 @@ def img_to_feature(img_bin):
 
 if __name__ == "__main__":
     f = open("tiredness.txt", "w")
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("cam cannot open.")
-        exit()
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, collect_data.WIDTH)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, collect_data.HEIGHT)
+    cap = collect_data.set_cap()
+
     df = None
-    frame=0
-    reg = pickle.load(open("model.pkl", "rb"))
-    buf = deque()
+    reg = pickle.load(open("./model/model_onda.pkl", "rb"))
+    #平均値を入れる
+    buf_X = deque()
+    buf_y = deque()
+    frame = 0
     while True :
         frame += 1
         ret, img = cap.read()
@@ -55,18 +56,22 @@ if __name__ == "__main__":
 
         X = img_to_feature(img_bin)
         if not (X is None):
-            X = X.drop(["frame", "face_token"],axis=1)
-            X["attributes_gender_value_Male"] = X.apply(lambda x: 1 if x["attributes_gender_value"] == "Male" else 0, axis=1)
-            X["attributes_glass_value_Dark"] = X.apply(lambda x: 1 if x["attributes_glass_value"] == "Dark" else 0, axis=1)
-            X["attributes_glass_value_Normal"] = X.apply(lambda x: 1 if x["attributes_glass_value"] == "Normal" else 0, axis=1)
-            X = X.drop(["attributes_gender_value","attributes_glass_value"],axis=1)
-            tiredness = reg.predict(X)[0]
-            buf.append(tiredness)
-            if len(buf)>10:
-                buf.popleft()
-            print(sum(buf)/len(buf), file=f) #直近10分間の平均値を1分毎にtiredness.txtに出力
 
-        if cv2.waitKey(1000 * 60) & 0xFF == ord('q'): #1分に一回とる
+            X = standardize.standardize(X)
+            X = X.drop(["frame", "face_token",
+                        "face_rectangle_top", "face_rectangle_left", "face_rectangle_width", "face_rectangle_height"],axis=1)
+            X = model.ohe(X)
+
+            buf_X.append(X.values[0])
+            if(len(buf_X)>20):
+                buf_X.popleft()
+            tiredness = reg.predict(pd.DataFrame([np.array(buf_X).mean(axis=0)], columns=X.columns))[0]
+            buf_y.append(tiredness)
+            if len(buf_y)>10:
+                buf_y.popleft()
+            print(sum(buf_y)/len(buf_y), file=f) #直近10分間の平均値を1分毎にtiredness.txtに出力
+
+        if cv2.waitKey(1000) & 0xFF == ord('q'): #1分に一回とる
             break
 
     cap.release()
