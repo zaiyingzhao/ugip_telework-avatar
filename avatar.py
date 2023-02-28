@@ -58,7 +58,12 @@ def load_tiredness():
     idx = f.read()
     f.close()
     global index
-    index = int(idx)
+    if float(idx) < 0.33:
+        index = 0
+    elif float(idx) < 0.66:
+        index = 1
+    else:
+        index = 2
     return 0
 
 
