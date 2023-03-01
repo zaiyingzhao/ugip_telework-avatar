@@ -2,25 +2,33 @@
 
 ## セットアップ
 1. 
-    ```bash
-    cd /path/to/ugip_telework-avatar
-    ```
+
+  ```bash
+  cd /path/to/ugip_telework-avatar
+  ```
 2.  
-    ```bash
-    pipenv --python 3.8.3
-    ```
+
+  ```bash
+  pipenv --python 3.8.3
+  ```
 3. 
-    ```bash
-    pipenv shell
-    ```
+  ```bash
+  pipenv shell
+  ```
 4. 
-    ```bash
-    pip install -r requirements.txt
-    ```
-5. face++のAPIを取得する
-6. `utils/api.py`中の`API_KEY`, `API_SECRET`を1.で取得した値に設定する。
-7.  `utils/client.py`の`IP`,`PORT`を疲労度を送りたい相手のIPアドレス、ポート番号に設定する(おそらく2人で同じwifiに接続していないと動きません)。
-ポート番号はデフォルトで受け取る側と同じ(51300)にしてありますが、もし相手が変更した場合はそれと揃えてください。受け取る側は`avator.py`の95行目で変更できます。
+  ```bash
+  pip install -r requirements.txt
+  ```
+5. 
+    
+    face++のAPIを取得する
+6. 
+
+    `utils/api.py`中の`API_KEY`, `API_SECRET`を1.で取得した値に設定する。
+7. 
+
+    `utils/client.py`の`IP`,`PORT`を疲労度を送りたい相手のIPアドレス、ポート番号に設定する(おそらく2人で同じwifiに接続していないと動きません)。
+    ポート番号はデフォルトで受け取る側と同じ(51300)にしてありますが、もし相手が変更した場合はそれと揃えてください。受け取る側は`avator.py`の95行目で変更できます。
 
 ## 使い方
 1. 個人にフィットしたモデルを作る
