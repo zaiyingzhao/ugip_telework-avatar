@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from setup import collect_data
+from utils import collect_data
 
 def standardize(df):
     df["center_x"] = df["face_rectangle_left"] + df["face_rectangle_width"]/2

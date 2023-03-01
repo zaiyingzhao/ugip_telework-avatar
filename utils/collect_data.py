@@ -7,7 +7,7 @@ import base64
 
 import cv2
 
-from setup import api
+from utils import api
 
 
 WIDTH = 640

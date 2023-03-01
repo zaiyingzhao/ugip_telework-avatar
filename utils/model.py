@@ -3,7 +3,7 @@ import numpy as np
 import xgboost as xgb
 import pickle
 
-from setup import collect_data
+from utils import collect_data
 
 def ohe(X):
     #カテゴリ変数をワンホットに

@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from setup import collect_data
+from utils import collect_data
 
 def tiredness_linear(length, start, end): #start, end 始まりと終わりの疲れ具合(0~1)
     return np.linspace(start, end, length)
