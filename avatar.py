@@ -92,7 +92,8 @@ def server():
 
 if __name__ == "__main__":
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(("0.0.0.0", 51300))
+    PORT = 51300
+    s.bind(("0.0.0.0", PORT))
     s.listen(1)
 
     avatar_index = 0
