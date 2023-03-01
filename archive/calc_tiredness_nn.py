@@ -42,9 +42,9 @@ class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(52, 64),
+            nn.Linear(52, 32),
             nn.ReLU(),
-            nn.Linear(64, 32),
+            nn.Linear(32, 32),
             nn.ReLU(),
             nn.Linear(32, 3),
             nn.ReLU(),
