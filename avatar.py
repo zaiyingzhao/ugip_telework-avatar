@@ -1,6 +1,7 @@
 import tkinter as tk
 from time import sleep
 import threading
+import socket
 
 
 class GifPlayer(threading.Thread):
@@ -53,24 +54,9 @@ class TkGif:
         self.player.stop()
 
 
-def load_tiredness():
-    f = open("tiredness.txt", "r")
-    idx = f.read()
-    f.close()
-    global index
-    if float(idx) < 0.33:
-        index = 0
-    elif float(idx) < 0.66:
-        index = 1
-    else:
-        index = 2
-    return 0
-
-
 def update_gif():
     global gif_player
     gif_player.stop_loop()
-    load_tiredness()
     gif_player = TkGif(paths[avatar_index][index], label)
     gif_player.play()
 
@@ -88,7 +74,35 @@ def change_avatar():
     avatar_index = (avatar_index + 1) % n
 
 
+def server():
+    global s
+    global index
+    global valid
+    while True:
+        clientsocket, address = s.accept()
+        print("connection established!")
+        while True:
+            data_b = clientsocket.recv(1024)
+            if not data_b:
+                break
+            index = int.from_bytes(data_b, "big")
+
+        clientsocket.close()
+
+
 if __name__ == "__main__":
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("0.0.0.0", 51300))
+    s.listen(1)
+
+    avatar_index = 0
+    index = 0
+    valid = 1
+
+    thread_server = threading.Thread(target=server)
+    thread_server.setDaemon(True)
+    thread_server.start()
+
     paths = [
         [
             "./gif/norinoriflower.gif",
@@ -102,13 +116,8 @@ if __name__ == "__main__":
         ],
     ]
 
-    avatar_index = 0
-    index = 0
-    load_tiredness()
-
     root = tk.Tk()
     root.title("remote-avatar")
-    # TODO: gifのサイズをリサイズして統一する
     root.geometry("900x700")
 
     main_frame = tk.Frame(root)
@@ -131,5 +140,4 @@ if __name__ == "__main__":
     gif_player.play()
 
     repeat_func()
-
     root.mainloop()
