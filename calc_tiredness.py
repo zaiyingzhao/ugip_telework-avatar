@@ -7,11 +7,11 @@ import pickle
 import base64
 from collections import deque
 
-from setup import collect_data
-from setup import standardize
-from setup import model
-from setup import api
-import client
+from utils import collect_data
+from utils import standardize
+from utils import model
+from utils import api
+from utils import client
 
 def img_to_feature(img_bin):
     response = requests.post(api.endpoint + api.detect, 

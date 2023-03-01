@@ -2,7 +2,7 @@ import socket
 
 def connect2server():
     c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    c.connect(("157.82.200.228", 51300))
+    c.connect(("YOUR IP", 51300))
 
     return c
 

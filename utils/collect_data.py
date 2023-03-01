@@ -1,6 +1,5 @@
 import os
 
-import numpy as np
 import pandas as pd
 import requests
 import json
@@ -8,11 +7,13 @@ import base64
 
 import cv2
 
-from setup import api
+from utils import api
 
 
 WIDTH = 640
 HEIGHT = 480
+
+OUTPUT_FOLDER = "./data"
 
 def flatten_dict(d, pre_lst=None, result=None):
     if result is None:
@@ -38,13 +39,14 @@ def read_img(img_bin,frame):
             )
   data = json.loads(response.text)
   df_tmp = None
-  if data["faces"]:
-    item = flatten_dict(data["faces"][0]).items()
-    keys = ["frame"]
-    keys += ["_".join(list(i[0])) for i in item]
-    value = [[frame]]
-    value[0] += [i[1] for i in item]
-    df_tmp = pd.DataFrame(value, columns=keys)
+  if "faces" in data.keys():
+    if data["faces"]:
+        item = flatten_dict(data["faces"][0]).items()
+        keys = ["frame"]
+        keys += ["_".join(list(i[0])) for i in item]
+        value = [[frame]]
+        value[0] += [i[1] for i in item]
+        df_tmp = pd.DataFrame(value, columns=keys)
 
   return len(data["faces"]), df_tmp
 
@@ -114,47 +116,12 @@ def collect_data(cap):
             if num_face != 0:
                 img = set_img(img, df_tmp)
 
-                if os.path.isfile("./data/res.csv"):
-                    df_tmp.to_csv("./data/res.csv", mode="a", header=False)
+                if os.path.isfile(f"{OUTPUT_FOLDER}/res.csv"):
+                    df_tmp.to_csv(f"{OUTPUT_FOLDER}/res.csv", mode="a", header=False)
                 else:
-                    df_tmp.to_csv("./data/res.csv")
+                    df_tmp.to_csv(f"{OUTPUT_FOLDER}/res.csv")
                 print(frame)
 
             cv2.imshow('Video', img)
             if cv2.waitKey(1000) & 0xFF == ord('q'):
                 break
-
-
-# if __name__ == "__main__":
-#     cap = cv2.VideoCapture(0)
-#     if not cap.isOpened():
-#         print("cam cannot open.")
-#         exit()
-#     cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
-#     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
-#     frame=0
-#     while True :
-#         frame += 1
-#         ret, img = cap.read()
-#         if ret:
-#             #APIに渡す形式に変更
-#             result, dst_data = cv2.imencode('.jpg', img)
-#             img_bin = base64.b64encode(dst_data)
-
-#             num_face, df_tmp = read_img(img_bin,frame)
-#             if num_face != 0:
-#                 img = set_img(img, df_tmp)
-
-#                 if os.path.isfile("./data/res.csv"):
-#                     df_tmp.to_csv("./data/res.csv", mode="a", header=False)
-#                 else:
-#                     df_tmp.to_csv("./data/res.csv")
-#                 print(frame)
-
-#             cv2.imshow('Video', img)
-#             if cv2.waitKey(1000) & 0xFF == ord('q'):
-#                 break
-
-#     cap.release()
-#     add_label.add_tiredness()
-#     standardize.standardize_data()

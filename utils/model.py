@@ -3,6 +3,7 @@ import numpy as np
 import xgboost as xgb
 import pickle
 
+from utils import collect_data
 
 def ohe(X):
     #カテゴリ変数をワンホットに
@@ -15,7 +16,7 @@ def ohe(X):
 
 def make_model():
     #読み込み
-    df = pd.read_csv("./data/res_tiredness_std.csv", index_col=0)
+    df = pd.read_csv(f"{collect_data.OUTPUT_FOLDER}/res_tiredness_std.csv", index_col=0)
     X = df.drop(["frame", "face_token", 
                 "face_rectangle_top", "face_rectangle_left", "face_rectangle_width", "face_rectangle_height",
                 "tiredness"],axis=1)

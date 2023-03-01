@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+from utils import collect_data
+
 def standardize(df):
     df["center_x"] = df["face_rectangle_left"] + df["face_rectangle_width"]/2
     df["center_y"] = df["face_rectangle_top"] + df["face_rectangle_height"]/2
@@ -14,8 +16,8 @@ def standardize(df):
 
 def standardize_data():
     #読み込み
-    df = pd.read_csv("./data/res_tiredness.csv", index_col=0)
+    df = pd.read_csv(f"{collect_data.OUTPUT_FOLDER}/res_tiredness.csv", index_col=0)
     #正規化
     df = standardize(df)
     #出力
-    df.to_csv("./data/res_tiredness_std.csv")
+    df.to_csv(f"{collect_data.OUTPUT_FOLDER}/res_tiredness_std.csv")
