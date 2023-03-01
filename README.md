@@ -1,15 +1,18 @@
 # ugip_telework-avatar
 
 ## セットアップ
-1.  ```bash
+1.  
+    ```bash
     pipenv --python 3.8.3
     ```
-2. ```bash
-   pipenv shell
-   ```
-3. ```bash
-   pip install -r requirements.txt
-   ```
+2. 
+    ```bash
+    pipenv shell
+    ```
+3. 
+    ```bash
+    pip install -r requirements.txt
+    ```
 4. face++のAPIを取得する
 5. `utils/api.py`中の`API_KEY`, `API_SECRET`を1.で取得した値に設定する。
 6. `utils/client.py`の`IP`,`PORT`を疲労度を送りたい相手のIPアドレス、ポート番号に設定する(おそらく2人で同じwifiに接続していないと動きません)。
