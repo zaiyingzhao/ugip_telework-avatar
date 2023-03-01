@@ -6,7 +6,7 @@ from utils import collect_data
 def tiredness_linear(length, start, end): #start, end 始まりと終わりの疲れ具合(0~1)
     return np.linspace(start, end, length)
 def tiredness_sigmoid(length, start, end, beta, alpha=8): #beta 作業時間のうちどのくらいで疲れを感じ始めたか(0~1)
-    alpha=length/2000
+    alpha=20
     x = np.linspace(-1,1,length)
     beta = beta*2-1
     y = 1/(1+np.exp(-alpha*(x-beta))) * (end-start) + start

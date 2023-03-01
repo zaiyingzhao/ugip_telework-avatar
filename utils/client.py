@@ -1,8 +1,11 @@
 import socket
 
+IP = "YOUR IP"
+PORT = 51300
+
 def connect2server():
     c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    c.connect(("YOUR IP", 51300))
+    c.connect((IP, PORT))
 
     return c
 
