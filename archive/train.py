@@ -42,23 +42,23 @@ dataset = TensorDataset(original_dataset=original_dataset)
 
 num_data = len(dataset)
 num_classes = 3
-val_size = int(0.5 * num_data)
+val_size = int(0.1 * num_data)
 train_size = num_data - val_size
 train_dataset, valid_dataset = torch.utils.data.random_split(
     dataset=dataset, lengths=[train_size, val_size], generator=torch.Generator()
 )
 print("Dataset split: train={}, valid={}".format(train_size, val_size))
 train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
-valid_loader = DataLoader(dataset=valid_dataset, batch_size=batch_size, shuffle=False)
+valid_loader = DataLoader(dataset=valid_dataset, batch_size=batch_size, shuffle=True)
 
 
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(52, 64),
+            nn.Linear(52, 32),
             nn.ReLU(),
-            nn.Linear(64, 32),
+            nn.Linear(32, 32),
             nn.ReLU(),
             nn.Linear(32, 3),
             nn.ReLU(),
@@ -70,7 +70,7 @@ class Net(nn.Module):
 
 
 net = Net()
-checkpoint = torch.load("model_weight.pth")
+checkpoint = torch.load("model_weight2.pth")
 state_dict = checkpoint.state_dict()
 net.load_state_dict(state_dict)
 
@@ -86,9 +86,9 @@ train_acc_list = []
 val_loss_list = []
 val_acc_list = []
 
-nb_epoch = 100
+nb_epoch = 3000
 
-max_val_acc = 0.8814898133277893
+max_val_acc = 0.5141242742538452
 for i in range(nb_epoch):
     train_loss = 0
     train_acc = 0
@@ -137,8 +137,8 @@ for i in range(nb_epoch):
     )
     if avg_val_acc > max_val_acc:
         max_val_acc = avg_val_acc
-        torch.save(net, "model_weight.pth")
-        print("weight saved to ./model_weight.pth")
+        torch.save(net, "model_weight2.pth")
+        print("weight saved to ./model_weight2.pth")
 
     train_loss_list.append(avg_train_loss)
     train_acc_list.append(avg_train_acc)
