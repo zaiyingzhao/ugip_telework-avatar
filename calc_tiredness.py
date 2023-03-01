@@ -11,6 +11,7 @@ from setup import collect_data
 from setup import standardize
 from setup import model
 from setup import api
+import client
 
 def img_to_feature(img_bin):
     response = requests.post(api.endpoint + api.detect, 
@@ -37,7 +38,9 @@ def img_to_feature(img_bin):
         return None
 
 if __name__ == "__main__":
-    f = open("tiredness.txt", "w")
+    c = client.connect2server()
+
+    f = open(f"{collect_data.OUTPUT_FOLDER}/tiredness.txt", "w")
     cap = collect_data.set_cap()
 
     df = None
@@ -49,7 +52,7 @@ if __name__ == "__main__":
     while True :
         frame += 1
         ret, img = cap.read()
-        cv2.imshow("video",img)
+        
         #APIに渡す形式に変更
         result, dst_data = cv2.imencode('.jpg', img)
         img_bin = base64.b64encode(dst_data)
@@ -69,10 +72,31 @@ if __name__ == "__main__":
             buf_y.append(tiredness)
             if len(buf_y)>10:
                 buf_y.popleft()
-            print(sum(buf_y)/len(buf_y), file=f) #直近10分間の平均値を1分毎にtiredness.txtに出力
+            output = sum(buf_y)/len(buf_y)
+            print(output, file=f) #直近10分間の平均値を1分毎にtiredness.txtに出力
+
+            if(output<0.33):
+                output_int = 0
+            elif output<0.67:
+                output_int = 1
+            else:
+                output_int = 2
+
+            print(output)
+            client.send2server(c,output_int)
+            cv2.putText(img,
+                text=str(round(output,2)),
+                org=(int(collect_data.WIDTH/10),int(collect_data.HEIGHT/5)),
+                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                fontScale=1.0,
+                color=(0, 255, 0),
+                thickness=1,
+                lineType=cv2.LINE_4)
+            cv2.imshow("video",img)
 
         if cv2.waitKey(1000) & 0xFF == ord('q'): #1分に一回とる
             break
 
     cap.release()
     f.close()
+    c.close()
