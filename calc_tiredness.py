@@ -1,100 +1,95 @@
-import pandas as pd
-import numpy as np
-import requests
-import json
-import cv2
-import pickle
 import base64
+import pickle
 from collections import deque
 
-from utils import collect_data
-from utils import standardize
-from utils import model
-from utils import api
-from utils import client
+import cv2
+import numpy as np
+import pandas as pd
 
-def img_to_feature(img_bin):
-    response = requests.post(api.endpoint + api.detect, 
-                            data={
-                            "api_key": api.API_KEY,
-                            "api_secret": api.API_SECRET,
-                            "image_base64":img_bin,
-                            "return_landmark": 1,
-                            "return_attributes": "gender,age,smiling,glass,headpose,blur,eyestatus,emotion,facequality,beauty,mouthstatus,eyegaze,skinstatus"
-                            }
-            )
-    data = json.loads(response.text)
+from utils import client, collect_data, model, standardize
 
-    if data["faces"]:
-        item = collect_data.flatten_dict(data["faces"][0]).items()
-        keys = ["frame"]
-        keys += ["_".join(list(i[0])) for i in item]
-        value = [[frame]]
-        value[0] += [i[1] for i in item]
-        df_tmp = pd.DataFrame(value, columns=keys)
 
-        return df_tmp
+def calc_level(tiredness):
+    if tiredness < 0.33:
+        return 0
+    elif tiredness < 0.67:
+        return 1
     else:
-        return None
+        return 2
+
 
 if __name__ == "__main__":
+    # 相手のPCに繋ぐ
     c = client.connect2server()
 
+    # 記録用ファイル
     f = open(f"{collect_data.OUTPUT_FOLDER}/tiredness.txt", "w")
+
+    # カメラをセット
     cap = collect_data.set_cap()
 
-    df = None
-    reg = pickle.load(open("./model/model_onda.pkl", "rb"))
-    #平均値を入れる
+    # 作成したモデルの読み込み
+    reg = pickle.load(open("./model/model.pkl", "rb"))
+
+    # バッファ
     buf_X = deque()
     buf_y = deque()
+
     frame = 0
-    while True :
+    while True:
         frame += 1
+        # カメラ画像読み込み
         ret, img = cap.read()
-        
-        #APIに渡す形式に変更
-        result, dst_data = cv2.imencode('.jpg', img)
+
+        # APIに渡す形式に変更
+        result, dst_data = cv2.imencode(".jpg", img)
         img_bin = base64.b64encode(dst_data)
 
-        X = img_to_feature(img_bin)
-        if not (X is None):
+        # 画像を特徴量に変換
+        num_face, X = collect_data.read_img(img_bin, frame)
 
+        if not (X is None):
+            # モデルに入れるように整形
             X = standardize.standardize(X)
-            X = X.drop(["frame", "face_token",
-                        "face_rectangle_top", "face_rectangle_left", "face_rectangle_width", "face_rectangle_height"],axis=1)
+            X = X.drop(
+                [
+                    "frame",
+                    "face_token",
+                    "face_rectangle_top",
+                    "face_rectangle_left",
+                    "face_rectangle_width",
+                    "face_rectangle_height",
+                ],
+                axis=1,
+            )
             X = model.ohe(X)
 
+            # 過去20行分の平均をとって入力
             buf_X.append(X.values[0])
-            if(len(buf_X)>20):
+            if len(buf_X) > 20:
                 buf_X.popleft()
-            tiredness = reg.predict(pd.DataFrame([np.array(buf_X).mean(axis=0)], columns=X.columns))[0]
+            tiredness = reg.predict(
+                pd.DataFrame([np.array(buf_X).mean(axis=0)], columns=X.columns)
+            )[0]
+
+            # 出力も過去10行分を平均した値にする
             buf_y.append(tiredness)
-            if len(buf_y)>10:
+            if len(buf_y) > 10:
                 buf_y.popleft()
-            output = sum(buf_y)/len(buf_y)
-            print(output, file=f) #直近10分間の平均値を1分毎にtiredness.txtに出力
+            output = sum(buf_y) / len(buf_y)
 
-            if(output<0.33):
-                output_int = 0
-            elif output<0.67:
-                output_int = 1
-            else:
-                output_int = 2
+            # ファイル出力
+            print(output, file=f)
 
-            print(output)
-            client.send2server(c,output_int)
-            cv2.putText(img,
-                text=str(round(output,2)),
-                org=(int(collect_data.WIDTH/10),int(collect_data.HEIGHT/5)),
-                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                fontScale=1.0,
-                color=(0, 255, 0),
-                thickness=1,
-                lineType=cv2.LINE_4)
-            cv2.imshow("video",img)
+            # 3段階にレベルわけする
+            tired_level = calc_level(output)
 
-        if cv2.waitKey(1000) & 0xFF == ord('q'): #1分に一回とる
+            # 相手のPCに送る
+            client.send2server(c, tired_level)
+
+            cv2.imshow("video", img)
+
+        if cv2.waitKey(1000) & 0xFF == ord("q"):
             break
 
     cap.release()
